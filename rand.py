@@ -93,8 +93,7 @@ def warningui():
     alarm_label.pack(pady=(10, 5), expand=True, anchor="s") 
     
     try:
-        frames = gifframes("alarm.gif")
-        if frames:
+        frames = gifframes("alarm.gif")0000000        if frames:
             alarm_label.frames = frames 
             animate_gif(root, alarm_label, frames, delay=80)
     except Exception as e:
@@ -121,8 +120,8 @@ def warningui():
         qr_image = qr_image.resize((450, 450), Image.Resampling.LANCZOS)
         qr_photo = ImageTk.PhotoImage(qr_image)
         qr_label = tk.Label(right_frame, image=qr_photo)
-        qr_label.image = qr_photo  # Maintain memory reference
-        qr_label.pack(expand=True) # Center it in the right frame
+        qr_label.image = qr_photo
+        qr_label.pack(expand=True)
     except Exception as e:
         print(f"Error loading qr.jpeg: {e}")
         error_label = tk.Label(right_frame, text="[ QR Code Missing ]", font=("Helvetica", 24), fg="red", bg="white")
