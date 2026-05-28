@@ -1,4 +1,4 @@
-# Endpoint Extortion & Ransomware
+# Endpoint Extortion Ransomware
 
 This program simulates a malicious host-lockdown screen that takes control of the display, blocks common system escape inputs, triggers distressing audio/visual indicators, and initiates an endpoint shutdown sequence upon timer expiration.
 
