@@ -27,6 +27,6 @@ To execute the user interface successfully, place the following assets in the ro
 * `alarm.gif` - The flashing graphic displayed on the left pane.
 * `qr.jpeg` - A mock InstaPay QR transaction graphic displayed on the right pane.
 
-## Security Analyst Testing Notes
+## Testing Notes
 * **Emergency Exit Hook:** For testing purposes during live lab deployments, an administrative backdoor bind is hardcoded. Pressing **`Escape` + `0`** simultaneously will instantly destroy the root UI instance and terminate execution cleanly without triggering the system shutdown.
 * **Virtual Environment Execution:** It is highly recommended to run this within your project virtual environment (`secai_gab_env`) to keep your host space clean of OS-level hooks.
