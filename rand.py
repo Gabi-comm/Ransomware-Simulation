@@ -93,7 +93,8 @@ def warningui():
     alarm_label.pack(pady=(10, 5), expand=True, anchor="s") 
     
     try:
-        frames = gifframes("alarm.gif")0000000        if frames:
+        frames = gifframes("alarm.gif") 
+        if frames:
             alarm_label.frames = frames 
             animate_gif(root, alarm_label, frames, delay=80)
     except Exception as e:
