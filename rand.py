@@ -86,7 +86,7 @@ def warningui():
 
     left_frame = tk.Frame(root)
     left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=50, pady=50)
-    root.bind("<Escape>"+"<0>", lambda event: exit(event, root))
+    root.bind("<Escape>", lambda event: exit(event, root))
     right_frame = tk.Frame(root)
     right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=50, pady=50)
     alarm_label = tk.Label(left_frame)
