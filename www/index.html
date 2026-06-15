@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -24,7 +25,7 @@
         .container {
             background: white;
             border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             max-width: 500px;
             width: 100%;
             overflow: hidden;
@@ -36,6 +37,7 @@
                 opacity: 0;
                 transform: translateY(30px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -91,7 +93,7 @@
             background: white;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             margin: 20px 0;
             position: relative;
         }
@@ -108,7 +110,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0, 0, 0, 0.7);
             border-radius: 10px;
             display: flex;
             align-items: center;
@@ -143,9 +145,11 @@
             0% {
                 transform: scale(1);
             }
+
             50% {
                 transform: scale(1.05);
             }
+
             100% {
                 transform: scale(1);
             }
@@ -202,6 +206,16 @@
             border-radius: 8px;
         }
 
+        .file-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px dashed #007cba;
+            border-radius: 8px;
+            background: #f8f9fa;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
         .countdown {
             font-size: 14px;
             text-align: center;
@@ -210,13 +224,14 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container" id="app">
         <div class="header">
             <h1>💰 GCash Checkout</h1>
             <p>Scan QR Code to Complete Payment</p>
         </div>
-        
+
         <div class="content">
             <div class="product">
                 <h3>Premium Product</h3>
@@ -226,20 +241,33 @@
 
             <div class="qr-section">
                 <div class="qr-container" id="qrContainer">
-                    <img id="qrImage" src="https://drive.google.com/thumbnail?id=1t3ag6W7I1u7vjGDchEIyN_w8NUoQ6XMm&sz=w300" alt="GCash QR Code" style="max-width: 100%;">
+                    <img id="qrImage"
+                        src="https://drive.google.com/thumbnail?id=1t3ag6W7I1u7vjGDchEIyN_w8NUoQ6XMm&sz=w300"
+                        alt="GCash QR Code" style="max-width: 100%;">
                     <div class="overlay" id="scanOverlay" style="display: none;">
                         <div>📱 SCANNED!</div>
                         <div style="font-size: 12px; margin-top: 10px;">Processing...</div>
                     </div>
                 </div>
-                
+
                 <div class="status pending" id="status">
                     ⏳ Waiting for payment...
                 </div>
 
+                <div class="upload-section" id="uploadSection" style="margin: 15px 0;">
+                    <p style="margin-bottom: 10px; font-weight: bold; color: #333;">Upload Proof of Payment</p>
+                    <input type="file" id="proofUpload" accept="image/*" class="file-input">
+                    <img id="proofPreview"
+                        style="max-width: 100%; max-height: 200px; display: none; margin: 10px auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                </div>
+
                 <div class="countdown" id="countdown"></div>
-                
+
                 <button class="button" id="simulateBtn">🔄 Have Paid</button>
+
+                <p style="margin-top: 15px; font-size: 14px; color: #555; text-align: center;">Want to upload from
+                    phone? <br><a href="#" id="showPhoneQrBtn"
+                        style="color: #007cba; font-weight: bold; text-decoration: none;">📱 Show Link QR</a></p>
             </div>
         </div>
     </div>
@@ -254,18 +282,26 @@
         const statusDiv = document.getElementById('status');
         const scanOverlay = document.getElementById('scanOverlay');
         const simulateBtn = document.getElementById('simulateBtn');
-        const qrUrlInput = document.getElementById('qrUrl');
+        const qrUrlInput = document.getElementById('qrUrl'); // Might be null
         const countdownDiv = document.getElementById('countdown');
+
+        // New DOM Elements
+        const uploadSection = document.getElementById('uploadSection');
+        const proofUpload = document.getElementById('proofUpload');
+        const proofPreview = document.getElementById('proofPreview');
+        const showPhoneQrBtn = document.getElementById('showPhoneQrBtn');
 
         // Load QR code from input
         function loadQRCode() {
-            const url = qrUrlInput.value.trim();
-            if (url) {
-                qrImage.src = url;
-                qrImage.onerror = () => {
-                    statusDiv.innerHTML = '⚠️ Failed to load QR code. Please check the URL.';
-                    statusDiv.className = 'status pending';
-                };
+            if (qrUrlInput) {
+                const url = qrUrlInput.value.trim();
+                if (url) {
+                    qrImage.src = url;
+                    qrImage.onerror = () => {
+                        statusDiv.innerHTML = '⚠️ Failed to load QR code. Please check the URL.';
+                        statusDiv.className = 'status pending';
+                    };
+                }
             }
         }
 
@@ -273,15 +309,15 @@
         function closeApplication() {
             if (isClosed) return;
             isClosed = true;
-            
+
             // Clear all timers
             if (paymentTimeout) clearTimeout(paymentTimeout);
             if (countdownInterval) clearInterval(countdownInterval);
-            
+
             // Show closing message
             statusDiv.innerHTML = '✅ Payment Successful! Closing application...';
             statusDiv.className = 'status success';
-            
+
             // Attempt to close the window/tab
             setTimeout(() => {
                 // For mobile apps (WebView)
@@ -294,7 +330,7 @@
                 }
                 // For regular browser - try to close
                 window.close();
-                
+
                 // Alternative: redirect to a blank page
                 setTimeout(() => {
                     document.body.innerHTML = '<h1 style="text-align:center;margin-top:50px;">✅ Payment Complete! You can close this window now.</h1>';
@@ -305,50 +341,81 @@
         // Handle successful payment
         function onPaymentSuccess() {
             if (isClosed) return;
-            
+
             // Clear any pending timeouts
             if (paymentTimeout) clearTimeout(paymentTimeout);
             if (countdownInterval) clearInterval(countdownInterval);
-            
+
             // Update UI
             statusDiv.innerHTML = '✅ Payment Successful! Closing application...';
             statusDiv.className = 'status success';
-            
+
             // Hide QR overlay if visible
             scanOverlay.style.display = 'flex';
             scanOverlay.innerHTML = '<div>✅ PAYMENT RECEIVED!</div><div style="font-size: 12px; margin-top: 10px;">Closing app...</div>';
-            
+
             // Close the app
             closeApplication();
         }
 
-        // Simulate QR code scan (for demo purposes)
-        function simulatePayment() {
-            if (isClosed) return;
-            
-            // Show scan animation
+        // Handle file selection preview
+        proofUpload.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    proofPreview.src = e.target.result;
+                    proofPreview.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Submit proof / Have Paid
+        simulateBtn.addEventListener('click', function () {
+            if (!proofUpload.files[0]) {
+                alert('Please upload your successful transaction image before proceeding.');
+                return;
+            }
+
+            // Show scanning/processing overlay
             scanOverlay.style.display = 'flex';
-            scanOverlay.innerHTML = '<div>📱 SCANNING...</div>';
-            
+            scanOverlay.innerHTML = '<div>📤 UPLOADING...</div>';
+
             setTimeout(() => {
-                scanOverlay.innerHTML = '<div>💳 PROCESSING PAYMENT...</div>';
-                
+                scanOverlay.innerHTML = '<div>💳 VERIFYING PAYMENT...</div>';
+
                 setTimeout(() => {
                     onPaymentSuccess();
-                }, 1500);
-            }, 1000);
-        }
+                }, 2000);
+            }, 1500);
+        });
+
+        // Generate QR code for mobile
+        showPhoneQrBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            // Create a QR code pointing to the current URL so user can open on phone
+            // Fallback for local files to a generic message URL
+            let currentUrl = window.location.href;
+            if (currentUrl.startsWith('file://')) {
+                currentUrl = 'https://google.com'; // Placeholder for local testing
+            }
+            const encodedUrl = encodeURIComponent(currentUrl);
+            qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodedUrl}`;
+            statusDiv.innerHTML = '📱 Scan this QR with your phone to open this page and upload proof.';
+            statusDiv.className = 'status pending';
+        });
 
         // Start waiting for payment (manual mode)
         function startPaymentListener() {
             if (isClosed) return;
-            
+
             statusDiv.innerHTML = '⏳ Waiting for payment...';
             statusDiv.className = 'status pending';
-            
+
             // Hide overlay
             scanOverlay.style.display = 'none';
-            
+
             // Set a timeout for auto-close (10 minutes)
             paymentTimeout = setTimeout(() => {
                 if (!isClosed) {
@@ -361,7 +428,7 @@
         function startAutoCloseCountdown(seconds = 10) {
             let timeLeft = seconds;
             countdownDiv.innerHTML = `Auto-closing in ${timeLeft} seconds...`;
-            
+
             countdownInterval = setInterval(() => {
                 timeLeft--;
                 if (timeLeft <= 0) {
@@ -388,9 +455,10 @@
         }
 
         // Event listeners
-        simulateBtn.addEventListener('click', simulatePayment);
-        qrUrlInput.addEventListener('change', loadQRCode);
-        
+        if (qrUrlInput) {
+            qrUrlInput.addEventListener('change', loadQRCode);
+        }
+
         // For actual GCash integration, you can add a button to confirm payment
         // Uncomment the following line to add a manual confirmation button
         // const confirmBtn = document.createElement('button');
@@ -405,14 +473,14 @@
         loadQRCode();
         startPaymentListener();
         // startAutoCloseCountdown(60); // Auto-close after 60 seconds if needed
-        
+
         // For Cordova/Capacitor app - close on back button
         document.addEventListener('backbutton', () => {
             if (confirm('Close the app?')) {
                 closeApplication();
             }
         }, false);
-        
+
         // Prevent accidental navigation
         window.addEventListener('beforeunload', (e) => {
             if (!isClosed) {
@@ -420,8 +488,9 @@
                 e.returnValue = '';
             }
         });
-        
+
         console.log('App ready - Waiting for payment');
     </script>
 </body>
+
 </html>

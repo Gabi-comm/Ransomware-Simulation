@@ -1,0 +1,12 @@
+names:
+- Receipt
+nc: 1
+roboflow:
+  license: CC BY 4.0
+  project: gcash-receipt-detect-srujc
+  url: https://universe.roboflow.com/gabriel-zisua/gcash-receipt-detect-srujc/dataset/2
+  version: 2
+  workspace: gabriel-zisua
+test: ../test/images
+train: ../train/images
+val: ../valid/images
