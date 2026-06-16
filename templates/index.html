@@ -228,7 +228,7 @@
 <body>
     <div class="container" id="app">
         <div class="header">
-            <h1>💰 GCash Checkout</h1>
+            <h1>GCash Checkout</h1>
             <p>Scan QR Code to Complete Payment</p>
         </div>
 
@@ -245,7 +245,7 @@
                         src="https://drive.google.com/thumbnail?id=1t3ag6W7I1u7vjGDchEIyN_w8NUoQ6XMm&sz=w300"
                         alt="GCash QR Code" style="max-width: 100%;">
                     <div class="overlay" id="scanOverlay" style="display: none;">
-                        <div>📱 SCANNED!</div>
+                        <div> SCANNED!</div>
                         <div style="font-size: 12px; margin-top: 10px;">Processing...</div>
                     </div>
                 </div>
@@ -285,7 +285,7 @@
         const qrUrlInput = document.getElementById('qrUrl'); // Might be null
         const countdownDiv = document.getElementById('countdown');
 
-        // New DOM Elements
+        // Target Action Elements
         const uploadSection = document.getElementById('uploadSection');
         const proofUpload = document.getElementById('proofUpload');
         const proofPreview = document.getElementById('proofPreview');
@@ -305,60 +305,56 @@
             }
         }
 
-        // Auto-close the app
+        // Auto-close the app upon passing verification
         function closeApplication() {
             if (isClosed) return;
             isClosed = true;
 
-            // Clear all timers
+            // Clear all active tracking timers
             if (paymentTimeout) clearTimeout(paymentTimeout);
             if (countdownInterval) clearInterval(countdownInterval);
 
-            // Show closing message
+            // Show final victory message
             statusDiv.innerHTML = '✅ Payment Successful! Closing application...';
             statusDiv.className = 'status success';
 
-            // Attempt to close the window/tab
+            // Terminate native views or redirect browser
             setTimeout(() => {
-                // For mobile apps (WebView)
+                // For mobile hybrid wrapper frameworks (WebView)
                 if (window.ReactNativeWebView) {
                     window.ReactNativeWebView.postMessage('close');
                 }
-                // For Capacitor/Cordova
+                // For Capacitor/Cordova builds
                 if (window.Capacitor && window.Capacitor.Plugins.App) {
                     window.Capacitor.Plugins.App.exitApp();
                 }
-                // For regular browser - try to close
+                // Standard desktop close request
                 window.close();
 
-                // Alternative: redirect to a blank page
+                // Desktop fallback container screen replacement
                 setTimeout(() => {
-                    document.body.innerHTML = '<h1 style="text-align:center;margin-top:50px;">✅ Payment Complete! You can close this window now.</h1>';
+                    document.body.innerHTML = '<h1 style="text-align:center;margin-top:50px;font-family:sans-serif;color:#155724;">✅ Payment Complete! You can close this window now.</h1>';
                 }, 500);
             }, 1000);
         }
 
-        // Handle successful payment
+        // Handle successful backend verification workflow 
         function onPaymentSuccess() {
             if (isClosed) return;
 
-            // Clear any pending timeouts
             if (paymentTimeout) clearTimeout(paymentTimeout);
             if (countdownInterval) clearInterval(countdownInterval);
 
-            // Update UI
             statusDiv.innerHTML = '✅ Payment Successful! Closing application...';
             statusDiv.className = 'status success';
 
-            // Hide QR overlay if visible
             scanOverlay.style.display = 'flex';
             scanOverlay.innerHTML = '<div>✅ PAYMENT RECEIVED!</div><div style="font-size: 12px; margin-top: 10px;">Closing app...</div>';
 
-            // Close the app
             closeApplication();
         }
 
-        // Handle file selection preview
+        // Handle real-time file selection UI image replacement
         proofUpload.addEventListener('change', function (e) {
             const file = e.target.files[0];
             if (file) {
@@ -371,34 +367,62 @@
             }
         });
 
-        // Submit proof / Have Paid
+        // CONNECTED TO PYTHON BACKEND SERVER FOR YOLO OBJECT DETECTION 
         simulateBtn.addEventListener('click', function () {
-            if (!proofUpload.files[0]) {
+            const file = proofUpload.files[0];
+            if (!file) {
                 alert('Please upload your successful transaction image before proceeding.');
                 return;
             }
 
-            // Show scanning/processing overlay
+            // Update UI overlay to reflect server validation work state
             scanOverlay.style.display = 'flex';
-            scanOverlay.innerHTML = '<div>📤 UPLOADING...</div>';
+            scanOverlay.innerHTML = '<div>💳 VERIFYING RECEIPT...</div>';
+            statusDiv.innerHTML = '⏳ AI is validating your proof of payment...';
+            statusDiv.className = 'status pending';
 
-            setTimeout(() => {
-                scanOverlay.innerHTML = '<div>💳 VERIFYING PAYMENT...</div>';
+            // Bind transaction image directly inside HTTP Multipart structure
+            const formData = new FormData();
+            formData.append('file', file);
 
-                setTimeout(() => {
+            // POST transmission payload targeting standard Flask API runtime
+            //CHANGE TO OWN IP
+            fetch('http://10.3.3.161:5000/verify-receipt', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Server returned verification failure status.');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Receipt valid and within 30%-100% confidence boundary
                     onPaymentSuccess();
-                }, 2000);
-            }, 1500);
+                } else {
+                    // Verification failed or fell outside threshold constraints
+                    scanOverlay.style.display = 'none';
+                    statusDiv.innerHTML = `❌ Verification Failed: ${data.message}`;
+                    statusDiv.className = 'status pending';
+                    alert(`Invalid Receipt: ${data.message}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error during verification:', error);
+                scanOverlay.style.display = 'none';
+                statusDiv.innerHTML = '⚠️ Server connection error. Try again.';
+                alert('Failed to connect to the computer vision backend. Please make sure your Python Flask app is running.');
+            });
         });
 
-        // Generate QR code for mobile
+        // Generate dynamic mock reference QR for cross-device loading 
         showPhoneQrBtn.addEventListener('click', function (e) {
             e.preventDefault();
-            // Create a QR code pointing to the current URL so user can open on phone
-            // Fallback for local files to a generic message URL
             let currentUrl = window.location.href;
             if (currentUrl.startsWith('file://')) {
-                currentUrl = 'https://google.com'; // Placeholder for local testing
+                currentUrl = 'https://google.com'; 
             }
             const encodedUrl = encodeURIComponent(currentUrl);
             qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodedUrl}`;
@@ -406,17 +430,15 @@
             statusDiv.className = 'status pending';
         });
 
-        // Start waiting for payment (manual mode)
+        // Start basic lifecycle waiting logic loops
         function startPaymentListener() {
             if (isClosed) return;
 
             statusDiv.innerHTML = '⏳ Waiting for payment...';
             statusDiv.className = 'status pending';
-
-            // Hide overlay
             scanOverlay.style.display = 'none';
 
-            // Set a timeout for auto-close (10 minutes)
+            // Safety cleanup hook (10 Minutes expiration limit fallback)
             paymentTimeout = setTimeout(() => {
                 if (!isClosed) {
                     statusDiv.innerHTML = '⏰ Session expired. Please refresh and try again.';
@@ -424,72 +446,17 @@
             }, 600000);
         }
 
-        // Start countdown for auto-close (optional feature)
-        function startAutoCloseCountdown(seconds = 10) {
-            let timeLeft = seconds;
-            countdownDiv.innerHTML = `Auto-closing in ${timeLeft} seconds...`;
-
-            countdownInterval = setInterval(() => {
-                timeLeft--;
-                if (timeLeft <= 0) {
-                    clearInterval(countdownInterval);
-                    countdownDiv.innerHTML = '';
-                    if (!isClosed) {
-                        // Auto-close if no payment (optional)
-                        // onPaymentSuccess(); // Uncomment to auto-close after countdown
-                    }
-                } else {
-                    countdownDiv.innerHTML = `Auto-closing in ${timeLeft} seconds...`;
-                }
-            }, 1000);
-        }
-
-        // Manual payment confirmation (for testing with real GCash)
-        function checkPaymentManually() {
-            // In production, this would be replaced with actual payment verification
-            // via webhook or API call to GCash
-            const confirmed = confirm('Has the payment been completed in GCash?');
-            if (confirmed) {
-                onPaymentSuccess();
-            }
-        }
-
-        // Event listeners
-        if (qrUrlInput) {
-            qrUrlInput.addEventListener('change', loadQRCode);
-        }
-
-        // For actual GCash integration, you can add a button to confirm payment
-        // Uncomment the following line to add a manual confirmation button
-        // const confirmBtn = document.createElement('button');
-        // confirmBtn.textContent = '✅ Confirm Payment (Manual)';
-        // confirmBtn.className = 'button';
-        // confirmBtn.style.marginTop = '10px';
-        // confirmBtn.style.background = '#28a745';
-        // confirmBtn.onclick = checkPaymentManually;
-        // document.querySelector('.qr-section').appendChild(confirmBtn);
-
-        // Initialize
+        // Initialize App Runtime State
         loadQRCode();
         startPaymentListener();
-        // startAutoCloseCountdown(60); // Auto-close after 60 seconds if needed
 
-        // For Cordova/Capacitor app - close on back button
-        document.addEventListener('backbutton', () => {
-            if (confirm('Close the app?')) {
-                closeApplication();
-            }
-        }, false);
-
-        // Prevent accidental navigation
+        // Prevent destructive accidental navigation
         window.addEventListener('beforeunload', (e) => {
             if (!isClosed) {
                 e.preventDefault();
                 e.returnValue = '';
             }
         });
-
-        console.log('App ready - Waiting for payment');
     </script>
 </body>
 
