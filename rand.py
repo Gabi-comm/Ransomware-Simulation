@@ -7,6 +7,10 @@ from pycaw.pycaw import AudioUtilities
 import keyboard
 from PIL import Image, ImageTk
 import os
+import socket
+import qrcode
+import subprocess
+import time
 
 devices = AudioUtilities.GetSpeakers()  
 volume_control = devices.EndpointVolume
@@ -36,6 +40,58 @@ newfreq = int(frequency * speed)
 mixer.init(newfreq)
 root=tk.Tk()
 root.attributes('-fullscreen', True)
+
+def get_local_ip():
+    """Gets the active local network IP address of this computer."""
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(('8.8.8.8', 80))
+        ip = s.getsockname()[0]
+    except Exception:
+        ip = '127.0.0.1'
+    finally:
+        s.close()
+    return ip
+
+def generate_qr_and_run():
+    # 1. Get the current running IP
+    local_ip = get_local_ip()
+    port = 5000
+    server_url = f"http://{local_ip}:{port}"
+    
+    print("=" * 60)
+    print(f"Detected Local Network IP: {local_ip}")
+    print(f"Target Frontend Link: {server_url}")
+    print("=" * 60)
+
+    # 2. Generate a QR Code pointing directly to your Flask server
+    qr = qrcode.QRCode(version=1, box_size=10, border=5)
+    qr.add_data(server_url)
+    qr.make(fit=True)
+    
+    # Save the QR code image locally
+    qr_filename = "qr.png"
+    img = qr.make_image(fill_color="black", back_color="white")
+    img.save(qr_filename)
+    print(f"🌐 QR Code generated and saved as '{qr_filename}'")
+    
+    try:
+        if os.name == 'nt': 
+            os.startfile(qr_filename)
+        elif os.name == 'posix':
+            subprocess.run(['open', qr_filename] if os.uname().sysname == 'Darwin' else ['xdg-open', qr_filename])
+    except Exception as e:
+        print(f"Could not automatically open image window: {e}")
+
+    # Give you a brief second to see the logs
+    time.sleep(2)
+    
+    print("\nStarting Flask Backend Server...")
+    try:
+
+        subprocess.run(["python", "app.py"])
+    except KeyboardInterrupt:
+        print("\nStopping Backend Server safely.")
 
 def togglecol():
     current=root.cget("bg")

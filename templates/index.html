@@ -387,7 +387,7 @@
 
             // POST transmission payload targeting standard Flask API runtime
             //CHANGE TO OWN IP
-            fetch('http://10.3.3.161:5000/verify-receipt', {
+            fetch(`${window.location.origin}/verify-receipt`, {
                 method: 'POST',
                 body: formData
             })
