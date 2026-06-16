@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">gcash</string>
-    <string name="title_activity_main">gcash</string>
-    <string name="package_name">com.rivan.gcash</string>
-    <string name="custom_url_scheme">com.rivan.gcash</string>
-</resources>
