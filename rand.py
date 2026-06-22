@@ -54,44 +54,48 @@ def get_local_ip():
     return ip
 
 def generate_qr_and_run():
-    # 1. Get the current running IP
-    local_ip = get_local_ip()
-    port = 5000
-    server_url = f"http://{local_ip}:{port}"
-    
-    print("=" * 60)
-    print(f"Detected Local Network IP: {local_ip}")
-    print(f"Target Frontend Link: {server_url}")
-    print("=" * 60)
-
-    # 2. Generate a QR Code pointing directly to your Flask server
-    qr = qrcode.QRCode(version=1, box_size=10, border=5)
-    qr.add_data(server_url)
-    qr.make(fit=True)
-    
-    # Save the QR code image locally
+    # Delete old QR code if exists so app.py can generate a fresh one
     qr_filename = "qr.png"
-    img = qr.make_image(fill_color="black", back_color="white")
-    img.save(qr_filename)
-    print(f"🌐 QR Code generated and saved as '{qr_filename}'")
-    
-    try:
-        if os.name == 'nt': 
-            os.startfile(qr_filename)
-        elif os.name == 'posix':
-            subprocess.run(['open', qr_filename] if os.uname().sysname == 'Darwin' else ['xdg-open', qr_filename])
-    except Exception as e:
-        print(f"Could not automatically open image window: {e}")
-
-    # Give you a brief second to see the logs
-    time.sleep(2)
+    if os.path.exists(qr_filename):
+        try:
+            os.remove(qr_filename)
+            print(f"Removed old QR code: {qr_filename}")
+        except Exception as e:
+            print(f"Could not remove old QR code: {e}")
     
     print("\nStarting Flask Backend Server...")
-    try:
+    print("Waiting for app.py to generate QR code...")
+    
+    # Determine Python executable (use venv if exists)
+    venv_python = os.path.join(".venv", "Scripts", "python.exe")
+    python_exe = venv_python if os.path.exists(venv_python) else "python"
+    
+    print(f"Using Python: {python_exe}")
+    
+    # Start app.py as a non-blocking subprocess with output capture
+    global app_process
+    app_process = subprocess.Popen(
+        [python_exe, "app.py"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        universal_newlines=True,
+        bufsize=1
+    )
+    
+    # Wait for QR code to be generated (max 10 seconds)
+    max_wait = 10
+    waited = 0
+    while not os.path.exists(qr_filename) and waited < max_wait:
+        time.sleep(0.5)
+        waited += 0.5
+    
+    if os.path.exists(qr_filename):
+        print(f"✅ QR code detected! Ready to display UI.")
+    else:
+        print(f"⚠️ Warning: QR code not found after {max_wait}s, proceeding anyway...")
 
-        subprocess.run(["python", "app.py"])
-    except KeyboardInterrupt:
-        print("\nStopping Backend Server safely.")
+# Global variable to track app.py process
+app_process = None
 
 def togglecol():
     current=root.cget("bg")
@@ -116,11 +120,22 @@ def alarm():
     mixer.music.set_volume(1.0)
 
 def on_closing():
+    global app_process
     keyboard.unblock_key('tab')
     keyboard.unblock_key('left windows')
     keyboard.unblock_key('right windows')
     keyboard.remove_hotkey('alt+f4')
     keyboard.remove_hotkey('alt+escape')
+    
+    # Terminate app.py if it's still running
+    if app_process and app_process.poll() is None:
+        print("Terminating app.py process...")
+        app_process.terminate()
+        try:
+            app_process.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            app_process.kill()
+    
     root.destroy()
 def gifframes(path):
     frames = []
@@ -143,7 +158,44 @@ def animate_gif(root, label, frames, delay, current_idx=0):
     root.after(delay, animate_gif, root, label, frames, delay, next_idx)
 
 def exit(event, root):
-    root.destroy()
+    on_closing()
+
+def check_shutdown_signal():
+    """Continuously check for shutdown signal from app.py"""
+    global app_process
+    
+    # Check for shutdown signal file
+    if os.path.exists("shutdown_signal.txt"):
+        print("\n✅ Receipt verified! Shutting down gracefully...")
+        # Clean up signal file
+        try:
+            os.remove("shutdown_signal.txt")
+        except:
+            pass
+        
+        # End rand.py execution
+        on_closing()
+        return
+    
+    # Check app.py output for "image 1/1"
+    if app_process and app_process.poll() is None:
+        try:
+            # Read available output without blocking
+            if app_process.stdout:
+                line = app_process.stdout.readline()
+                if line:
+                    print(f"[app.py] {line.strip()}")
+                    if "image 1/1" in line.lower():
+                        print("\n✅ Image processing detected! Shutting down gracefully...")
+                        # End rand.py execution
+                        on_closing()
+                        return
+        except:
+            pass
+    
+    # Check again in 500ms
+    root.after(500, check_shutdown_signal)
+
 def warningui():
 
     left_frame = tk.Frame(root)
@@ -196,6 +248,10 @@ def warningui():
     root.bind("Alt-Escape>", lambda e: "break")
 
     root.bind("<Escape>", lambda event: on_closing())
+    
+    # Start checking for shutdown signal from app.py
+    check_shutdown_signal()
+    
     root.mainloop()
 def countdown(time_left, label):
     if time_left >= 0:
@@ -207,6 +263,9 @@ def countdown(time_left, label):
         label.config(text="00:00\nSHUTTING DOWN...", fg="white")
         os.system("shutdown /r /t 0")
 
+
+# Start app.py and wait for QR code generation
+generate_qr_and_run()
 
 root.config(bg= "red",cursor="none")
 togglecol()

@@ -33,11 +33,7 @@ def generate_qr_code(url, filename="qr.png"):
     try:
         urllib.request.urlretrieve(api_url, filename)
         print(f"QR code successfully generated and saved to: {os.path.abspath(filename)}")
-        try:
-            os.startfile(filename)
-            print("Opened QR code image automatically.")
-        except Exception as e:
-            print(f"Could not open QR code image automatically: {e}")
+        print("✅ QR code ready for rand.py to display")
     except Exception as e:
         print(f"Failed to generate QR code via API: {e}. Trying offline generation...")
         try:
@@ -48,10 +44,7 @@ def generate_qr_code(url, filename="qr.png"):
             img = qr.make_image(fill_color="black", back_color="white")
             img.save(filename)
             print(f"QR code successfully generated offline and saved to: {os.path.abspath(filename)}")
-            try:
-                os.startfile(filename)
-            except Exception:
-                pass
+            print("✅ QR code ready for rand.py to display")
         except ImportError:
             print("To generate QR code offline, please run: pip install qrcode pillow")
 
