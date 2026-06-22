@@ -1,1 +1,1 @@
-pip install pygame pycaw keyboard pillow comtypes
+pip install pygame-ce pycaw comtypes keyboard pillow qrcode flask flask-cors ultralytics
