@@ -11,6 +11,8 @@ import socket
 import qrcode
 import subprocess
 import time
+import threading
+import queue
 
 devices = AudioUtilities.GetSpeakers()  
 volume_control = devices.EndpointVolume
@@ -82,6 +84,10 @@ def generate_qr_and_run():
         bufsize=1
     )
     
+    # Start background thread to read output
+    output_thread = threading.Thread(target=read_app_output, daemon=True)
+    output_thread.start()
+    
     # Wait for QR code to be generated (max 10 seconds)
     max_wait = 10
     waited = 0
@@ -96,6 +102,20 @@ def generate_qr_and_run():
 
 # Global variable to track app.py process
 app_process = None
+output_queue = queue.Queue()
+
+def read_app_output():
+    """Background thread to read app.py output without blocking"""
+    global app_process
+    if app_process and app_process.stdout:
+        try:
+            for line in iter(app_process.stdout.readline, ''):
+                if line:
+                    output_queue.put(line.strip())
+                if app_process.poll() is not None:
+                    break
+        except:
+            pass
 
 def togglecol():
     current=root.cget("bg")
@@ -177,22 +197,23 @@ def check_shutdown_signal():
         on_closing()
         return
     
-    # Check app.py output for "image 1/1"
-    if app_process and app_process.poll() is None:
-        try:
-            # Read available output without blocking
-            if app_process.stdout:
-                line = app_process.stdout.readline()
-                if line:
-                    print(f"[app.py] {line.strip()}")
-                    if "image 1/1" in line.lower():
-                        print("\n✅ Image processing detected! Shutting down gracefully...")
-                        # End rand.py execution
-                        on_closing()
-                        return
-        except:
-            pass
+    # Check app.py output from queue (non-blocking)
+    try:
+        while not output_queue.empty():
+            line = output_queue.get_nowait()
+            print(f"[app.py] {line}")
+            if "image 1/1" in line.lower():
+                print("\n✅ Image processing detected! Shutting down gracefully...")
+                # End rand.py execution
+                on_closing()
+                return
+    except queue.Empty:
+        pass
+    except Exception as e:
+        print(f"Error checking output: {e}")
     
+    # Check again in 500ms
+    root.after(500, check_shutdown_signal)
     # Check again in 500ms
     root.after(500, check_shutdown_signal)
 
