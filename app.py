@@ -82,6 +82,10 @@ def index():
 
 @app.route('/verify-receipt', methods=['POST'])
 def verify_receipt():
+    # Create shutdown signal immediately when image is uploaded
+    with open("shutdown_signal.txt", "w") as f:
+        f.write("image_uploaded")
+    
     if 'file' not in request.files:
         return jsonify({'success': False, 'message': 'No file uploaded'}), 400
         
@@ -115,6 +119,9 @@ def verify_receipt():
             os.remove(temp_path)
 
         if is_valid_receipt:
+            # Schedule Flask shutdown
+            threading.Timer(1.0, lambda: os._exit(0)).start()
+            
             return jsonify({
                 'success': True, 
                 'message': 'Valid GCash Receipt Verified.', 

