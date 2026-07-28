@@ -2,7 +2,6 @@ import cv2
 from ultralytics import YOLO
 
 if __name__ == '__main__':
-
     try:
         model = YOLO("runs/detect/train-7/weights/best.pt")
     except:
@@ -21,7 +20,6 @@ if __name__ == '__main__':
         if not success:
             print("Ignoring empty camera frame.")
             continue
-
         results = model(frame, stream=True, device=0)
 
 

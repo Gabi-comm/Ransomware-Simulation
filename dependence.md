@@ -1,1 +1,2 @@
-pip install pygame-ce pycaw comtypes keyboard pillow qrcode flask flask-cors ultralytics
+pip install pygame pycaw keyboard pillow comtypes
+pip install gradio
